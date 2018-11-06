@@ -5,7 +5,9 @@ default: esp8266 esp32
 TOPDIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 DATE:=$(shell date +%Y%m%d)
 RELVER?=0
-VER:=$(DATE).$(RELVER)
+OS?=linux
+ARCH=$(shell uname -m)
+VER:=$(OS)-$(ARCH)-$(DATE).$(RELVER)
 
 Q?=@
 
@@ -16,13 +18,13 @@ esp8266: build/toolchain-esp8266-$(VER).tar.xz
 build/lx106/Makefile:
 	$Qcd build && git clone --recursive https://github.com/pfalcon/esp-open-sdk.git lx106
 
-esp8266/bin/xtensa-lx106-elf-gcc: build/lx106/Makefile
+esp8266-$(VER)/bin/xtensa-lx106-elf-gcc: build/lx106/Makefile
 	$Qecho CT_STATIC_TOOLCHAIN=y >> $(dir $<)/crosstool-config-overrides
-	$Qcd "$(dir $<)" && $(MAKE) STANDALONE=n TOOLCHAIN="$(TOPDIR)/esp8266" toolchain libhal
+	$Qcd "$(dir $<)" && $(MAKE) STANDALONE=n TOOLCHAIN="$(TOPDIR)/esp8266-$(VER)" toolchain libhal
 
-build/toolchain-esp8266-$(VER).tar.xz: esp8266/bin/xtensa-lx106-elf-gcc
+build/toolchain-esp8266-$(VER).tar.xz: esp8266-$(VER)/bin/xtensa-lx106-elf-gcc
 	@echo 'Packaging toolchain ($@)...'
-	$Qtar cJf $@ esp8266/
+	$Qtar cJf $@ esp8266-$(VER)/
 	$Qtouch $@
 	@echo [32m[DONE] $@[0m
 
@@ -39,22 +41,22 @@ build/esp32/ct-ng: build/esp32/Makefile
 
 build/esp32/.config: build/esp32/ct-ng
 	$Qcd "$(dir $@)" && ./ct-ng xtensa-esp32-elf
-	$Qsed -i 's,^CT_PREFIX_DIR=.*$$,CT_PREFIX_DIR="$${CT_TOP_DIR}/../../esp32",' $@
+	$Qsed -i 's,^CT_PREFIX_DIR=.*$$,CT_PREFIX_DIR="$${CT_TOP_DIR}/../../esp32-$(VER)",' $@
 	$Qecho CT_STATIC_TOOLCHAIN=y >> $@
 
-esp32/bin/xtensa-esp32-elf-gcc: build/esp32/.config
+esp32-$(VER)/bin/xtensa-esp32-elf-gcc: build/esp32/.config
 	$Qcd "$(dir $<)" && ./ct-ng build
 
-build/toolchain-esp32-$(VER).tar.xz: esp32/bin/xtensa-esp32-elf-gcc
+build/toolchain-esp32-$(VER).tar.xz: esp32-$(VER)/bin/xtensa-esp32-elf-gcc
 	@echo 'Packaging toolchain ($@)...'
-	$Qtar cJf $@ esp32/
+	$Qtar cJf $@ esp32-$(VER)/
 	$Qtouch $@
 	@echo [32m[DONE] $@[0m
 
 
 .PHONY:clean
 clean:
-	-rm -rf build/esp32 build/lx106 build/toolchain-*.tar.xz
+	-rm -rf build/esp32 build/lx106 build/toolchain-*.tar.xz esp8266-* esp32-*
 
 .SUFFIXES:
 %: %,v
