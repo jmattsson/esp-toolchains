@@ -1,0 +1,11 @@
+--- configure.orig	2019-07-31 16:33:42.340434597 +1000
++++ configure.ac	2019-07-31 16:35:51.013963106 +1000
+@@ -151,7 +151,7 @@
+     [GNU bash >= 3.1],
+     [bash],
+     [bash],
+-    [^GNU bash, version (3\.[1-9]|4)])
++    [^GNU bash, version (3\.[1-9]|4|5)])
+ 
+ # We need a awk that *is* GNU awk
+ CTNG_PROG_VERSION_REQ_STRICT([AWK],
